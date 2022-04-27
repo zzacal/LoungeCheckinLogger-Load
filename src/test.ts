@@ -5,7 +5,7 @@ import { data } from "./data";
 import { randomUUID } from "crypto";
 import fs from "fs";
 
-let results: [boolean, number, number][] = [];
+let results: [boolean, number, number, any][] = [];
 
 export const getRandomString = (length: number) => {
   var result = "";
@@ -18,7 +18,7 @@ export const getRandomString = (length: number) => {
   return result;
 };
 
-const logDuration = (result: [boolean, number, number]) => {
+const logDuration = (result: [boolean, number, number, any]) => {
   results.push(result);
   return false;
 };
@@ -28,7 +28,7 @@ const post = async (
   visitKey: string,
   token: string,
   worker: number
-): Promise<[boolean, number, number]> => {
+): Promise<[boolean, number, number, any]> => {
   const record = { ...data, fullName: randomUUID(), visitKey };
   const start = Date.now();
   try {
@@ -39,9 +39,9 @@ const post = async (
         Accept: "application/json",
       },
     });
-    return [true, Date.now() - start, worker];
+    return [true, Date.now() - start, worker, null];
   } catch (e) {
-    return [false, Date.now() - start, worker];
+    return [false, Date.now() - start, worker, e];
   }
 };
 
@@ -70,10 +70,14 @@ export const test = async (
   delay: number,
   key: string
 ) => {
-  console.log("Test Key: " + key);
-  console.log(`${count} messages per worker`);
-  console.log(`${workers} workers`);
-  console.log(`${delay} delay per request`);
+  // console.log("Test Key: " + key);
+  // console.log(`${url} url`);
+  // console.log(`${tokenUrl} tokenUrl`);
+  // console.log(`${tokenAuth} tokenAuth`);
+  // console.log(`${count} messages per worker`);
+  // console.log(`${workers} workers`);
+  // console.log(`${delay} delay per request`);
+
   try {
     var token = await getToken(tokenUrl, tokenAuth);
   } catch (e) {
@@ -98,13 +102,7 @@ export const test = async (
     let start = Date.now();
     await Promise.allSettled(ops);
     let totalDuration = Date.now() - start;
-
-    await fs.writeFile(
-      `results/${start}.json`,
-      JSON.stringify(results),
-      () => {}
-    );
-
     console.log("total run: " + totalDuration + "ms");
+    return results;
   }
 };
