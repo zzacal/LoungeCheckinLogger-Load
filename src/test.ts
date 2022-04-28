@@ -1,9 +1,9 @@
-import axios from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { retryAsync } from "rolly-retry";
 import qs from "qs";
 import { data } from "./data";
 import { randomUUID } from "crypto";
-import fs from "fs";
+import { createAxios } from "./axiosClient";
 
 let results: [boolean, number, number, any][] = [];
 
@@ -24,21 +24,16 @@ const logDuration = (result: [boolean, number, number, any]) => {
 };
 
 const post = async (
+  axiosInstance: AxiosInstance,
+  config: AxiosRequestConfig,
   url: string,
   visitKey: string,
-  token: string,
   worker: number
 ): Promise<[boolean, number, number, any]> => {
   const record = { ...data, fullName: randomUUID(), visitKey };
   const start = Date.now();
   try {
-    const response = await axios.post(url, record, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
+    const response = await axiosInstance.post(url, record, config);
     return [true, Date.now() - start, worker, null];
   } catch (e) {
     return [false, Date.now() - start, worker, e];
@@ -70,13 +65,11 @@ export const test = async (
   delay: number,
   key: string
 ) => {
-  // console.log("Test Key: " + key);
-  // console.log(`${url} url`);
-  // console.log(`${tokenUrl} tokenUrl`);
-  // console.log(`${tokenAuth} tokenAuth`);
-  // console.log(`${count} messages per worker`);
-  // console.log(`${workers} workers`);
-  // console.log(`${delay} delay per request`);
+  console.log("Test Key: " + key);
+  console.log(`${url} url`);
+  console.log(`${count} messages per worker`);
+  console.log(`${workers} workers`);
+  console.log(`${delay} delay per request`);
 
   try {
     var token = await getToken(tokenUrl, tokenAuth);
@@ -87,9 +80,17 @@ export const test = async (
     let ops = [];
 
     for (let x = 0; x < workers; x++) {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      };
+      const client = createAxios(config);
       ops.push(
         retryAsync(
-          [async () => await post(url, key, token, x)],
+          [async () => await post(client, config, url, key, x)],
           logDuration,
           count,
           {

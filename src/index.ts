@@ -11,6 +11,7 @@ const messageCount = parseInt(process.env.MESSAGE_COUNT ?? "1");
 const workerCount = parseInt(process.env.WORKER_COUNT ?? "1");
 const callInterval = parseInt(process.env.CALL_INTERVAL ?? "100");
 const start = Date.now();
+const key = getRandomString(7);
 test(
   relicsUrl,
   tokenUrl,
@@ -18,9 +19,13 @@ test(
   messageCount,
   workerCount,
   callInterval,
-  getRandomString(7)
+  key
 ).then((result) => {
-  fs.writeFile(`results/${start}.json`, JSON.stringify(result), (err) => {
-    console.log(err);
-  });
+  fs.writeFile(
+    `results/${start}.${key}.json`,
+    JSON.stringify(result),
+    (err) => {
+      console.log(err);
+    }
+  );
 });
